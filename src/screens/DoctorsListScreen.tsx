@@ -7,21 +7,99 @@ import {
   View,
   Pressable,
 } from "react-native";
-import DoctorCard from "../components/DoctorCard";
 
-const doctor = {
-  id: "1",
-  name: "Dr Smith",
-  schedules: [],
-};
+import DoctorCard from "../components/DoctorCard";
+import { fetchDoctors } from "../api/doctorsApi";
+import { Doctor } from "../types";
 
 export default function DoctorsListScreen({ navigation }: any) {
-  useEffect(() => {}, []);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadDoctors() {
+      try {
+        setLoading(true);
+        setError("");
+        const data = await fetchDoctors();
+        const doctorsMap = new Map();
+        data.forEach((item: any) => {
+          const id = item.name.toLowerCase().replace(/\s+/g, "");
+          if (!doctorsMap.has(id)) {
+            doctorsMap.set(id, {
+              id,
+              name: item.name,
+              timezone: item.timezone,
+              schedules: [],
+            });
+          }
+          doctorsMap.get(id).schedules.push({
+            day: item.day_of_week,
+            start: item.available_at.trim(),
+            end: item.available_until.trim(),
+          });
+        });
+        const availableDoctors = Array.from(doctorsMap.values()).filter(
+          (doctor) => doctor.schedules.length > 0,
+        );
+        setDoctors(availableDoctors);
+      } catch {
+        setError("Unable to load doctors. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadDoctors();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
+        <Text style={styles.helper}>Loading doctors...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.error}>{error}</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Available Doctors</Text>
-      <DoctorCard doctor={doctor} onPress={() => {}}></DoctorCard>
+      <View style={styles.header}>
+        <Text style={styles.title}>Available Doctors</Text>
+
+        <Pressable
+          style={styles.myBookingsButton}
+          onPress={() => navigation.navigate("MyBookings")}
+        >
+          <Text style={styles.myBookingsText}>My Bookings</Text>
+        </Pressable>
+      </View>
+
+      <FlatList
+        data={doctors}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <DoctorCard
+            doctor={item}
+            onPress={() =>
+              navigation.navigate("DoctorDetail", {
+                doctor: item,
+              })
+            }
+          />
+        )}
+        ListEmptyComponent={
+          <Text style={styles.helper}>No active doctors available.</Text>
+        }
+      />
     </View>
   );
 }
