@@ -7,6 +7,13 @@ import {
   View,
   Pressable,
 } from "react-native";
+import DoctorCard from "../components/DoctorCard";
+
+const doctor = {
+  id: "1",
+  name: "Dr Smith",
+  schedules: [],
+};
 
 export default function DoctorsListScreen({ navigation }: any) {
   useEffect(() => {}, []);
@@ -14,6 +21,7 @@ export default function DoctorsListScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Available Doctors</Text>
+      <DoctorCard doctor={doctor} onPress={() => {}}></DoctorCard>
     </View>
   );
 }
